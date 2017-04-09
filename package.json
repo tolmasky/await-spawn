@@ -1,0 +1,19 @@
+{
+  "name": "@await/spawn",
+  "version": "1.0.0",
+  "description": "",
+  "main": "spawn.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/runkitdev/await-spawn"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Francisco Ryan Tolmasky I",
+  "license": "MIT",
+  "bugs": {
+    "url" : "https://github.com/runkitdev/await-spawn/issues"
+   }
+}
