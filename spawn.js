@@ -10,7 +10,8 @@ module.exports = function spawn(command, args, options = { })
         const captured = { stdout: "", stderr: "" };
     
         const normalizedStdio = getNormalizedStdio(stdio);
-        const optionsWithAlteredStdio = captureStdio ? Object.assign(normalizedStdio, { 1: "pipe", 2: "pipe" }) : normalizedStdio;
+        const alteredStdio = captureStdio ? Object.assign(normalizedStdio, { 1: "pipe", 2: "pipe" }) : normalizedStdio;
+        const optionsWithAlteredStdio = Object.assign({ }, options, { stdio: alteredStdio });
 
         const start = new Date();
 
