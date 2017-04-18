@@ -2,27 +2,64 @@
 const { spawn: spawn_native } = require("child_process");
 
 
-module.exports = function spawn(command, args, options)
+module.exports = function spawn(command, args, options = { })
 {
     return new Promise(function (resolve, reject)
     {
-        const child = spawn_native(command, args, options);
-        const { captureStdout, rejectOnExitCode } = options;
-        let stdout = "";
+        const { captureStdio = true, rejectOnExitCode = true, stdio } = options;
+        const captured = { stdout: "", stderr: "" };
+    
+        const normalizedStdio = getNormalizedStdio(stdio);
+        const optionsWithAlteredStdio = captureStdio ? Object.assign(normalizedStdio, { 1: "pipe", 2: "pipe" }) : normalizedStdio;
 
-        if (captureStdout)
-            child.stdout.on("data", aString => stdout += aString + "");
+        const start = new Date();
+
+        const child = spawn_native(command, args, optionsWithAlteredStdio);
+
+        if (captureStdio)
+        {
+            child.stdout.on("data", aString => captured.stdout += aString + "");
+            child.stderr.on("data", aString => captured.stderr += aString + "");
+
+            if (stdio && (stdio === "inherit" || stdio[1] === "inherit"))
+                child.stdout.pipe(process.stdout);
+
+            if (stdio && (stdio === "inherit" || stdio[2] === "inherit"))
+                child.stderr.pipe(process.stderr);
+        }
 
         child.on("close", function (anExitCode)
         {
-            const result = Object.assign({ exitCode: anExitCode }, captureStdout && { stdout });
-            
+            const result = Object.assign({ exitCode: anExitCode, duration: new Date() - start }, captureStdio && captured);
+
             if (anExitCode !== 0 && rejectOnExitCode)
                 return reject(new ExitCodeError(anExitCode, result));
-                
+
             resolve(result);
         });
     });
+}
+
+function getNormalizedStdio(stdio)
+{
+    if (typeof stdio === "string")
+        return [stdio, stdio, stdio];
+    
+    if (Array.isArray(stdio))
+        return stdio;
+    
+    return ["pipe", "pipe", "pipe"];
+}
+
+function getNormalizedStdio(stdio)
+{
+    if (typeof stdio === "string")
+        return [stdio, stdio, stdio];
+    
+    if (Array.isArray(stdio))
+        return stdio;
+    
+    return ["pipe", "pipe", "pipe"];
 }
 
 function ExitCodeError(anExitCode, properties)
