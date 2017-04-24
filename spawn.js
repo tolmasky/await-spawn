@@ -10,7 +10,7 @@ module.exports = function spawn(command, args, options = { })
         const captured = { stdout: "", stderr: "" };
     
         const normalizedStdio = getNormalizedStdio(stdio);
-        const alteredStdio = captureStdio ? Object.assign(normalizedStdio, { 1: "pipe", 2: "pipe" }) : normalizedStdio;
+        const alteredStdio = captureStdio ? Object.assign([], normalizedStdio, { 1: "pipe", 2: "pipe" }) : normalizedStdio;
         const optionsWithAlteredStdio = Object.assign({ }, options, { stdio: alteredStdio });
 
         const start = new Date();
@@ -22,10 +22,10 @@ module.exports = function spawn(command, args, options = { })
             child.stdout.on("data", aString => captured.stdout += aString + "");
             child.stderr.on("data", aString => captured.stderr += aString + "");
 
-            if (stdio && (stdio === "inherit" || stdio[1] === "inherit"))
+            if (normalizedStdio[1] === "inherit")
                 child.stdout.pipe(process.stdout);
 
-            if (stdio && (stdio === "inherit" || stdio[2] === "inherit"))
+            if (normalizedStdio[2] === "inherit")
                 child.stderr.pipe(process.stderr);
         }
 
@@ -45,20 +45,9 @@ function getNormalizedStdio(stdio)
 {
     if (typeof stdio === "string")
         return [stdio, stdio, stdio];
-    
-    if (Array.isArray(stdio))
-        return stdio;
-    
-    return ["pipe", "pipe", "pipe"];
-}
 
-function getNormalizedStdio(stdio)
-{
-    if (typeof stdio === "string")
-        return [stdio, stdio, stdio];
-    
     if (Array.isArray(stdio))
-        return stdio;
+        return [].concat(stdio);
     
     return ["pipe", "pipe", "pipe"];
 }
