@@ -1,8 +1,7 @@
 
 const { spawn: spawn_native } = require("child_process");
 
-
-module.exports = function spawn(command, args, options = { })
+function spawn(command, args, options = { })
 {
     return new Promise(function (resolve, reject)
     {
@@ -40,6 +39,12 @@ module.exports = function spawn(command, args, options = { })
         });
     });
 }
+
+module.exports = spawn;
+
+module.exports.spawn = spawn;
+module.exports.verbose = (aCommand, args, options) => spawn(aCommand, args, Object.assign({ stdio: ["ignore", "inherit", "inherit"] }, options));
+module.exports.silent = (aCommand, args, options) => spawn(aCommand, args, Object.assign({ stdio: "ignore" }, options));
 
 function getNormalizedStdio(stdio)
 {
