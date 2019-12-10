@@ -1,5 +1,6 @@
 
 const { spawn: spawn_native } = require("child_process");
+const Stream = require("stream");
 
 function spawn(command, args, options = { })
 {
@@ -24,16 +25,25 @@ function spawn(command, args, options = { })
             if (normalizedStdio[1] === "inherit")
                 child.stdout.pipe(process.stdout);
 
+            else if (normalizedStdio[1] instanceof Stream)
+                child.stdout.pipe(normalizedStdio[1]);
+
             if (normalizedStdio[2] === "inherit")
                 child.stderr.pipe(process.stderr);
+
+            else if (normalizedStdio[2] instanceof Stream)
+                child.stderr.pipe(normalizedStdio[2]);
         }
 
-        child.on("close", function (anExitCode)
+        child.on("close", function (exitCode)
         {
-            const result = Object.assign({ exitCode: anExitCode, duration: new Date() - start }, captureStdio && captured);
+            const duration = new Date() - start;
+            const result = Object.assign(
+                { exitCode, duration },
+                captureStdio && captured);
 
-            if (anExitCode !== 0 && rejectOnExitCode)
-                return reject(new ExitCodeError(anExitCode, result));
+            if (exitCode !== 0 && rejectOnExitCode)
+                return reject(new ExitCodeError(exitCode, result));
 
             resolve(result);
         });
