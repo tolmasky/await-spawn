@@ -53,8 +53,18 @@ function spawn(command, args, options = { })
 module.exports = spawn;
 
 module.exports.spawn = spawn;
-module.exports.verbose = (aCommand, args, options) => spawn(aCommand, args, Object.assign({ stdio: ["ignore", "inherit", "inherit"] }, options));
-module.exports.silent = (aCommand, args, options) => spawn(aCommand, args, Object.assign({ stdio: "ignore" }, options));
+
+module.exports.verbose = (command, args, options) =>
+    spawn(command, args,
+        Object.assign({ stdio: ["ignore", "inherit", "inherit"] }, options));
+
+module.exports.verbose.stderr = (command, args, options) =>
+    spawn(command, args,
+        Object.assign({ stdio: [0, process.stderr, process.stderr] }, options));
+
+module.exports.silent = (command, args, options) =>
+    spawn(command, args, Object.assign({ stdio: "ignore" }, options));
+
 
 function getNormalizedStdio(stdio)
 {
