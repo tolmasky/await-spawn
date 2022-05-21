@@ -4,7 +4,8 @@ const Stream = require("stream");
 
 function spawn(command, args, options = { })
 {
-    return new Promise(function (resolve, reject)
+    let child = null;
+    return Object.assign(new Promise(function (resolve, reject)
     {
         const { captureStdio = true, rejectOnExitCode = true, stdio } = options;
         const captured = { stdout: "", stderr: "" };
@@ -15,7 +16,7 @@ function spawn(command, args, options = { })
 
         const start = new Date();
 
-        const child = spawn_native(command, args, optionsWithAlteredStdio);
+        child = spawn_native(command, args, optionsWithAlteredStdio);
 
         if (captureStdio)
         {
@@ -47,7 +48,7 @@ function spawn(command, args, options = { })
 
             resolve(result);
         });
-    });
+    }), { process: child });
 }
 
 module.exports = spawn;
