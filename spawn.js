@@ -9,9 +9,16 @@ function spawn(command, args, options = { })
     {
         const { captureStdio = true, rejectOnExitCode = true, stdio } = options;
         const captured = { stdout: "", stderr: "" };
-    
+        const input =
+            typeof options.input === "string" &&
+            Stream.Readable.from([options.input], { objectMode: false });
+
         const normalizedStdio = getNormalizedStdio(stdio);
-        const alteredStdio = captureStdio ? Object.assign([], normalizedStdio, { 1: "pipe", 2: "pipe" }) : normalizedStdio;
+        const alteredStdio = Object.assign(
+            [],
+            normalizedStdio,
+            captureStdio && { 1: "pipe", 2: "pipe" },
+            input && { 0: "pipe" });
         const optionsWithAlteredStdio = Object.assign({ }, options, { stdio: alteredStdio });
 
         const start = new Date();
@@ -35,6 +42,9 @@ function spawn(command, args, options = { })
             else if (normalizedStdio[2] instanceof Stream)
                 child.stderr.pipe(normalizedStdio[2]);
         }
+
+        if (input)
+            input.pipe(child.stdin);
 
         child.on("close", function (exitCode)
         {
@@ -74,7 +84,7 @@ function getNormalizedStdio(stdio)
 
     if (Array.isArray(stdio))
         return [].concat(stdio);
-    
+
     return ["pipe", "pipe", "pipe"];
 }
 
@@ -91,7 +101,7 @@ function ExitCodeError(anExitCode, properties)
     });
 
     error.exitCode = anExitCode;
-    
+
     Object.assign(error, properties);
 
     Object.setPrototypeOf(error, ExitCodeError.prototype);
