@@ -5,6 +5,7 @@ const Stream = require("stream");
 function spawn(command, args, options = { })
 {
     let child = null;
+    let finishError = prepareFutureError(command, new Error());
     return Object.assign(new Promise(function (resolve, reject)
     {
         const { captureStdio = true, rejectOnExitCode = true, stdio } = options;
@@ -54,7 +55,10 @@ function spawn(command, args, options = { })
                 captureStdio && captured);
 
             if (exitCode !== 0 && rejectOnExitCode)
-                return reject(new ExitCodeError(exitCode, result));
+            {
+                const error = finishError(exitCode, result);
+                return reject(error);
+            }
 
             resolve(result);
         });
@@ -88,26 +92,32 @@ function getNormalizedStdio(stdio)
     return ["pipe", "pipe", "pipe"];
 }
 
-function ExitCodeError(anExitCode, properties)
+// This weird roundabout way making an error is helpful because it preserves the stack
+// trace from where the call to `spawn` happened rather than exposing the useless
+// internals of how an thrown error via the `close` event gets made.
+// Unfortunately it's kind of gross.
+function prepareFutureError(command, error)
 {
-    const error = new Error("Process exited with status: " + anExitCode);
+    return function finishError(exitCode, result) {
+        error.message = `Process "${command}" exited with status: ${exitCode}`;
 
-    Object.defineProperty(error, "name",
-    {
-        value: "ExitCodeError",
-        writable: true,
-        enumerable: false,
-        configurable: true
-    });
+        Object.defineProperty(error, "name",
+        {
+            value: "ExitCodeError",
+            writable: true,
+            enumerable: false,
+            configurable: true
+        });
+        error.command = command;
+        error.exitCode = exitCode;
+        Object.assign(error, result);
+        Object.setPrototypeOf(error, ExitCodeError.prototype);
 
-    error.exitCode = anExitCode;
-
-    Object.assign(error, properties);
-
-    Object.setPrototypeOf(error, ExitCodeError.prototype);
-
-    return error;
+        return error;
+    };
 }
+
+function ExitCodeError() { }
 
 ExitCodeError.prototype = Object.create(Error.prototype);
 ExitCodeError.prototype.constructor = ExitCodeError;
